@@ -3,4 +3,4 @@ requests
 pandas
 PyPDF2
 reportlab
-google-genai
+google-generativeai

@@ -1,0 +1,140 @@
+[
+  [
+    {
+      "file": "RFP Title Office Furniture Procurem.txt",
+      "decision": {
+        "scores": {
+          "total": 19
+        },
+        "win_probability": "57%",
+        "recommendation": "TEAM-AS-SUB",
+        "confidence": "HIGH",
+        "partner_required": "YES",
+        "partner_type": "8(a)",
+        "naics": [
+          {
+            "code": "541511",
+            "title": "Custom Software Development"
+          },
+          {
+            "code": "541519",
+            "title": "Cybersecurity"
+          }
+        ],
+        "matched_projects": [
+          {
+            "project": "Cloud Migration Program",
+            "reason": "Matches cloud + architecture requirements"
+          }
+        ],
+        "explanation": "\n    This opportunity was evaluated using rule-based scoring.\n\n    \u2022 Identified NAICS categories: 2\n    \u2022 Capability alignment with IT / Cloud / AI services\n    \u2022 Final recommendation: TEAM-AS-SUB\n\n    This explanation is generated without AI due to API limitation.\n    "
+      }
+    },
+    {
+      "file": "RFP Title IT Operations Support and.txt",
+      "decision": {
+        "scores": {
+          "total": 21
+        },
+        "win_probability": "63%",
+        "recommendation": "BID",
+        "confidence": "HIGH",
+        "partner_required": "NO",
+        "partner_type": null,
+        "naics": [
+          {
+            "code": "541511",
+            "title": "Custom Software Development"
+          },
+          {
+            "code": "541512",
+            "title": "System Design"
+          },
+          {
+            "code": "541513",
+            "title": "IT Support"
+          }
+        ],
+        "matched_projects": [
+          {
+            "project": "Cloud Migration Program",
+            "reason": "Matches cloud + architecture requirements"
+          }
+        ],
+        "explanation": "\n    This opportunity was evaluated using rule-based scoring.\n\n    \u2022 Identified NAICS categories: 3\n    \u2022 Capability alignment with IT / Cloud / AI services\n    \u2022 Final recommendation: BID\n\n    This explanation is generated without AI due to API limitation.\n    "
+      }
+    },
+    {
+      "file": "RFP Title Enterprise Cloud Transfor.txt",
+      "decision": {
+        "scores": {
+          "total": 21
+        },
+        "win_probability": "63%",
+        "recommendation": "BID",
+        "confidence": "HIGH",
+        "partner_required": "NO",
+        "partner_type": null,
+        "naics": [
+          {
+            "code": "541511",
+            "title": "Custom Software Development"
+          },
+          {
+            "code": "541512",
+            "title": "System Design"
+          },
+          {
+            "code": "541519",
+            "title": "Cybersecurity"
+          }
+        ],
+        "matched_projects": [
+          {
+            "project": "Cloud Migration Program",
+            "reason": "Matches cloud + architecture requirements"
+          }
+        ],
+        "explanation": "\n    This opportunity was evaluated using rule-based scoring.\n\n    \u2022 Identified NAICS categories: 3\n    \u2022 Capability alignment with IT / Cloud / AI services\n    \u2022 Final recommendation: BID\n\n    This explanation is generated without AI due to API limitation.\n    "
+      }
+    },
+    {
+      "file": "Request for Proposal (RFP).txt",
+      "decision": {
+        "scores": {
+          "total": 23
+        },
+        "win_probability": "69%",
+        "recommendation": "BID",
+        "confidence": "HIGH",
+        "partner_required": "NO",
+        "partner_type": null,
+        "naics": [
+          {
+            "code": "541511",
+            "title": "Custom Software Development"
+          },
+          {
+            "code": "541512",
+            "title": "System Design"
+          },
+          {
+            "code": "541513",
+            "title": "IT Support"
+          },
+          {
+            "code": "541519",
+            "title": "Cybersecurity"
+          }
+        ],
+        "matched_projects": [
+          {
+            "project": "Cloud Migration Program",
+            "reason": "Matches cloud + architecture requirements"
+          }
+        ],
+        "explanation": "\n    This opportunity was evaluated using rule-based scoring.\n\n    \u2022 Identified NAICS categories: 4\n    \u2022 Capability alignment with IT / Cloud / AI services\n    \u2022 Final recommendation: BID\n\n    This explanation is generated without AI due to API limitation.\n    "
+      }
+    }
+  ]
+]

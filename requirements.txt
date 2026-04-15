@@ -1,6 +1,6 @@
-streamlit
-requests
-pandas
-PyPDF2
-reportlab
-google-generativeai
+streamlit 
+requests 
+pandas 
+PyPDF2 
+reportlab 
+google-generativeai 

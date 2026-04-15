@@ -1,150 +1,153 @@
 import os
+import json
+import requests
 
-# =========================
-# GEMINI SETUP
-# =========================
-try:
-    from google import genai
-    GEMINI_AVAILABLE = True
-except:
-    GEMINI_AVAILABLE = False
-
+# ==============================
+# CONFIG
+# ==============================
 API_KEY = os.getenv("GOOGLE_API_KEY")
 
-if GEMINI_AVAILABLE and not API_KEY:
+if not API_KEY:
     raise ValueError("❌ GOOGLE_API_KEY not set")
 
-if GEMINI_AVAILABLE:
-    client = genai.Client(api_key=API_KEY)
+# Use WORKING Gemini model (important)
+MODEL = "gemini-1.5-flash-latest"
+URL = f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL}:generateContent?key={API_KEY}"
 
 
-# =========================
+# ==============================
 # GEMINI CALL
-# =========================
-def ask_gemini(prompt):
-    if not GEMINI_AVAILABLE:
-        return None
-
+# ==============================
+def call_gemini(prompt):
     try:
-        response = client.models.generate_content(
-            model="gemini-1.5-flash",
-            contents=prompt
-        )
+        payload = {
+            "contents": [
+                {
+                    "parts": [{"text": prompt}]
+                }
+            ]
+        }
 
-        if hasattr(response, "text") and response.text:
-            return response.text
+        response = requests.post(URL, json=payload)
+        data = response.json()
 
-        if response.candidates:
-            return response.candidates[0].content.parts[0].text
+        if "candidates" in data:
+            return data["candidates"][0]["content"]["parts"][0]["text"]
 
         return None
 
-    except Exception:
+    except Exception as e:
+        print("Gemini Error:", e)
         return None
 
 
-# =========================
-# NAICS DETECTION
-# =========================
-def detect_naics(text):
+# ==============================
+# NAICS CLASSIFICATION
+# ==============================
+def classify_naics(text):
     text = text.lower()
-    naics = []
 
-    if any(k in text for k in ["ai", "machine learning", "automation", "application"]):
-        naics.append({"code": "541511", "title": "Custom Software Development"})
-
-    if any(k in text for k in ["architecture", "integration", "cloud"]):
-        naics.append({"code": "541512", "title": "System Design"})
-
-    if any(k in text for k in ["support", "helpdesk", "operations"]):
-        naics.append({"code": "541513", "title": "IT Support"})
-
-    if any(k in text for k in ["security", "nist", "fedramp"]):
-        naics.append({"code": "541519", "title": "Cybersecurity"})
-
-    if any(k in text for k in ["consulting", "pmo", "strategy"]):
-        naics.append({"code": "541611", "title": "Consulting"})
-
-    if any(k in text for k in ["staffing", "resources"]):
-        naics.append({"code": "561320", "title": "Staffing"})
-
-    return naics
-
-
-# =========================
-# AI / FALLBACK EXPLANATION
-# =========================
-def generate_explanation(text, decision):
-
-    prompt = f"""
-    Explain why this RFP received this evaluation:
-
-    Score: {decision['scores']['total']}
-    Recommendation: {decision['recommendation']}
-    """
-
-    result = ask_gemini(prompt)
-
-    if result:
-        return result
-
-    # ✅ FALLBACK (IMPORTANT FOR DEMO)
-    return f"""
-    This opportunity was evaluated using rule-based scoring.
-
-    • Identified NAICS categories: {len(decision.get('naics', []))}
-    • Capability alignment with IT / Cloud / AI services
-    • Final recommendation: {decision['recommendation']}
-
-    This explanation is generated without AI due to API limitation.
-    """
-
-
-# =========================
-# EVALUATION
-# =========================
-def evaluate_opportunity(text):
-
-    naics = detect_naics(text)
-
-    score = 15 + len(naics) * 2
-    score = min(score, 25)
-
-    win_probability = f"{score * 3}%"
-
-    if score >= 20:
-        rec = "BID"
-    elif score >= 15:
-        rec = "TEAM-AS-SUB"
-    else:
-        rec = "NO-BID"
-
-    decision = {
-        "scores": {"total": score},
-        "win_probability": win_probability,
-        "recommendation": rec,
-        "confidence": "HIGH" if score >= 18 else "MEDIUM",
-        "partner_required": "YES" if rec != "BID" else "NO",
-        "partner_type": "8(a)" if rec != "BID" else None,
-        "naics": naics,
-        "matched_projects": [
-            {
-                "project": "Cloud Migration Program",
-                "reason": "Matches cloud + architecture requirements"
-            }
-        ]
+    mapping = {
+        "cloud": ("541512", "Systems Design"),
+        "software": ("541511", "Custom Software Development"),
+        "cybersecurity": ("541519", "Cybersecurity"),
+        "support": ("541513", "IT Support"),
+        "data": ("541511", "Data Engineering"),
+        "ai": ("541715", "AI / ML Research")
     }
 
-    decision["explanation"] = generate_explanation(text, decision)
+    result = []
+    for key, val in mapping.items():
+        if key in text:
+            result.append({"code": val[0], "title": val[1]})
 
-    return decision
+    if not result:
+        result.append({"code": "000000", "title": "General IT"})
+
+    return result
 
 
-# =========================
-# MAIN
-# =========================
+# ==============================
+# MATCH PROJECTS
+# ==============================
+def match_projects(text):
+    projects = []
+
+    if "cloud" in text.lower():
+        projects.append({
+            "project": "Cloud Migration Program",
+            "reason": "Matches cloud + architecture requirements"
+        })
+
+    if "cyber" in text.lower():
+        projects.append({
+            "project": "Cybersecurity Upgrade",
+            "reason": "Matches security requirements"
+        })
+
+    return projects
+
+
+# ==============================
+# EXPLANATION (AI)
+# ==============================
+def generate_explanation(text):
+    prompt = f"""
+    Analyze this RFP and explain:
+    - Why this score is given
+    - Strengths
+    - Risks
+    - Recommendation
+
+    RFP:
+    {text}
+    """
+
+    result = call_gemini(prompt)
+
+    if result:
+        return result.strip()
+
+    return "AI explanation not available"
+
+
+# ==============================
+# SCORING LOGIC
+# ==============================
+def calculate_score(text):
+    score = 0
+
+    if "cloud" in text.lower():
+        score += 5
+    if "ai" in text.lower():
+        score += 5
+    if "security" in text.lower():
+        score += 5
+    if "support" in text.lower():
+        score += 3
+    if "experience" in text.lower():
+        score += 2
+
+    return min(score, 25)
+
+
+# ==============================
+# MAIN ANALYZER
+# ==============================
 def analyze_rfp_text(text, filename="RFP"):
+    score = calculate_score(text)
+    win_probability = int((score / 25) * 100)
+
+    recommendation = "BID" if score >= 15 else "NO BID"
+    partner_required = "YES" if score < 12 else "NO"
+
     return {
         "file": filename,
-        "decision": evaluate_opportunity(text)
+        "score": score,
+        "win_probability": f"{win_probability}%",
+        "recommendation": recommendation,
+        "partner": partner_required,
+        "naics": classify_naics(text),
+        "matched_projects": match_projects(text),
+        "explanation": generate_explanation(text)
     }

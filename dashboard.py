@@ -5,6 +5,7 @@ import pdfplumber
 from docx import Document
 import io
 import re
+import os
 
 # ================= CONFIG =================
 CLIENT_ID = os.getenv("CLIENT_ID")

@@ -1,4 +1,5 @@
 streamlit
 requests
 msal
-streamlit-echarts
+pdfplumber
+python-docx

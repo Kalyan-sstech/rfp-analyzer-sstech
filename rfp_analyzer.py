@@ -3,11 +3,10 @@ def process_rfp(text):
     text = text.lower()
 
     # -------------------------------
-    # 1. SCORING ENGINE (Weighted)
+    # 1. SCORING ENGINE
     # -------------------------------
     score = 0
 
-    # Strength areas
     if "cloud" in text or "azure" in text:
         score += 10
 
@@ -23,20 +22,20 @@ def process_rfp(text):
     if "federal" in text or "government" in text:
         score += 7
 
-    # Risk deductions
+    # Risks
     if "clearance" in text:
         score -= 6
 
     if "onsite" in text:
         score -= 4
 
-    if "short timeline" in text or "urgent" in text:
+    if "urgent" in text or "short timeline" in text:
         score -= 3
 
     score = max(0, min(score, 30))
 
     # -------------------------------
-    # 2. DECISION ENGINE
+    # 2. DECISION
     # -------------------------------
     if score >= 22:
         decision = "BID"
@@ -49,100 +48,75 @@ def process_rfp(text):
         win_probability = "40%"
 
     # -------------------------------
-    # 3. CAPABILITY MATCHING
+    # 3. CAPABILITIES
     # -------------------------------
-    capabilities_match = []
+    capabilities = []
 
     if "cybersecurity" in text:
-        capabilities_match.append(
-            "Strong cybersecurity capability aligned with NIST, FedRAMP compliance"
-        )
+        capabilities.append("Cybersecurity (NIST, FedRAMP)")
 
-    if "cloud" in text or "azure" in text:
-        capabilities_match.append(
-            "Cloud & Azure expertise including migration and operations"
-        )
+    if "cloud" in text:
+        capabilities.append("Cloud & Azure expertise")
 
-    if "ai" in text or "automation" in text:
-        capabilities_match.append(
-            "AI/ML and RPA automation capabilities available"
-        )
+    if "ai" in text:
+        capabilities.append("AI/ML capability")
 
     if "data" in text:
-        capabilities_match.append(
-            "Data engineering, BI, and analytics experience"
-        )
-
-    if "erp" in text or "crm" in text:
-        capabilities_match.append(
-            "ERP/CRM integration (SAP, Salesforce, Dynamics)"
-        )
+        capabilities.append("Data engineering & analytics")
 
     # -------------------------------
-    # 4. PAST PERFORMANCE MAPPING
+    # 4. PAST PERFORMANCE
     # -------------------------------
-    past_performance = []
+    past = []
 
     if "data" in text:
-        past_performance.append(
-            "Azure data warehouse project for banking client"
-        )
+        past.append("Azure Data Warehouse project (Banking)")
 
-    if "automation" in text or "rpa" in text:
-        past_performance.append(
-            "RPA automation delivering 50% efficiency improvement"
-        )
+    if "automation" in text:
+        past.append("RPA automation (50% efficiency gain)")
 
     if "cybersecurity" in text:
-        past_performance.append(
-            "Security operations for government and compliance projects"
-        )
+        past.append("Government security operations experience")
 
     # -------------------------------
-    # 5. RISK ENGINE
+    # 5. RISKS
     # -------------------------------
     risks = []
 
     if "clearance" in text:
-        risks.append("Security clearance requirement")
+        risks.append("Security clearance required")
 
     if "onsite" in text:
-        risks.append("Onsite delivery dependency")
+        risks.append("Onsite requirement")
 
-    if "experience of 10 years" in text:
-        risks.append("High experience requirement")
-
-    if not capabilities_match:
-        risks.append("Low capability alignment")
+    if not capabilities:
+        risks.append("No strong capability match")
 
     # -------------------------------
-    # 6. EXECUTIVE SUMMARY (Manual)
+    # 6. SUMMARY
     # -------------------------------
     summary = f"""
-This opportunity has a score of {score}/30 indicating a {decision} decision.
+Score: {score}/30 → {decision}
 
-Strength Areas:
-- {'; '.join(capabilities_match) if capabilities_match else 'Limited alignment'}
+Strengths:
+- {', '.join(capabilities) if capabilities else 'Limited'}
 
-Relevant Past Performance:
-- {'; '.join(past_performance) if past_performance else 'No strong references'}
+Past Performance:
+- {', '.join(past) if past else 'Not available'}
 
-Key Risks:
-- {'; '.join(risks) if risks else 'No major risks identified'}
+Risks:
+- {', '.join(risks) if risks else 'Low'}
 
 Recommendation:
-Proceed with {decision} strategy with focus on highlighted strengths.
+Proceed with {decision}
 """
 
-    # -------------------------------
-    # FINAL OUTPUT
-    # -------------------------------
     return {
         "scores": {"total": score},
         "win_probability": win_probability,
         "recommendation": decision,
-        "capability_match": capabilities_match,
-        "past_performance": past_performance,
+        "capability_match": capabilities,
+        "past_performance": past,
         "risks": risks,
         "explanation": summary
     }

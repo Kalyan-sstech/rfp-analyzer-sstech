@@ -1,126 +1,153 @@
 import streamlit as st
-import rfp_analyzer
-import os
-import glob
 import requests
-from msal import ConfidentialClientApplication
-from streamlit_echarts import st_echarts
+import msal
+import pdfplumber
+from docx import Document
+import io
+import re
 
-st.set_page_config(layout="wide")
-
-# ---------------- SECURE CONFIG ----------------
-TENANT_ID = os.getenv("TENANT_ID")
+# ================= CONFIG =================
 CLIENT_ID = os.getenv("CLIENT_ID")
 CLIENT_SECRET = os.getenv("CLIENT_SECRET")
+TENANT_ID = os.getenv("TENANT_ID")
 
-# ---------------- AUTH ----------------
+DRIVE_ID = "b!ORTaGLwN-02_GrAVrK79m9MsvOiftmRArp9gOMPHOxcdYXfXWEvoTrGLSi4bzM20"
+
+AUTHORITY = f"https://login.microsoftonline.com/{TENANT_ID}"
+SCOPE = ["https://graph.microsoft.com/.default"]
+
+# ================= AUTH =================
 def get_token():
-    app = ConfidentialClientApplication(
+    app = msal.ConfidentialClientApplication(
         CLIENT_ID,
-        authority=f"https://login.microsoftonline.com/{TENANT_ID}",
-        client_credential=CLIENT_SECRET,
+        authority=AUTHORITY,
+        client_credential=CLIENT_SECRET
     )
-    token = app.acquire_token_for_client(scopes=["https://graph.microsoft.com/.default"])
-    return token["access_token"]
+    result = app.acquire_token_for_client(scopes=SCOPE)
+    return result.get("access_token")
 
-# ---------------- ONEDRIVE ----------------
-def get_rfp_files(token):
-    url = "https://graph.microsoft.com/v1.0/me/drive/root:/RFP-AI/Active RFPs:/children"
+# ================= SHAREPOINT =================
+def get_all_files_recursive(token):
     headers = {"Authorization": f"Bearer {token}"}
-    return requests.get(url, headers=headers).json().get("value", [])
+    all_files = []
+
+    def traverse(path):
+        url = f"https://graph.microsoft.com/v1.0/drives/{DRIVE_ID}/root:/{path}:/children"
+        res = requests.get(url, headers=headers)
+
+        if res.status_code != 200:
+            return
+
+        items = res.json().get("value", [])
+
+        for item in items:
+            name = item["name"]
+
+            if "folder" in item:
+                traverse(f"{path}/{name}")
+            else:
+                all_files.append({
+                    "name": name,
+                    "id": item["id"],
+                    "path": f"{path}/{name}"
+                })
+
+    traverse("SST Inc/Client")
+    return all_files
+
 
 def download_file(token, file_id):
-    url = f"https://graph.microsoft.com/v1.0/me/drive/items/{file_id}/content"
+    url = f"https://graph.microsoft.com/v1.0/drives/{DRIVE_ID}/items/{file_id}/content"
     headers = {"Authorization": f"Bearer {token}"}
     return requests.get(url, headers=headers).content
 
-# ---------------- UI ----------------
-st.sidebar.title("🚀 SYSTEMSOFT")
-st.title("RFP Intelligence Platform")
-st.write("Manual Intelligence Engine")
+# ================= DOCUMENT PARSER =================
+def extract_text(file_bytes, file_name):
+    try:
+        if file_name.lower().endswith(".pdf"):
+            with pdfplumber.open(io.BytesIO(file_bytes)) as pdf:
+                return "\n".join([p.extract_text() or "" for p in pdf.pages])
 
-st.markdown("---")
+        elif file_name.lower().endswith(".docx"):
+            doc = Document(io.BytesIO(file_bytes))
+            return "\n".join([p.text for p in doc.paragraphs])
 
-mode = st.radio("Select Data Source", ["Local", "OneDrive"])
-
-result = None
-
-# ---------------- LOCAL MODE ----------------
-if mode == "Local":
-    files = glob.glob("data/rfp/*.txt")
-
-    if not files:
-        st.warning("No local RFP files found")
-    else:
-        names = sorted([os.path.basename(f) for f in files])
-        selected = st.selectbox("Select Local RFP", names)
-
-        if selected:
-            with open(f"data/rfp/{selected}", "r", encoding="utf-8") as f:
-                content = f.read()
-
-            result = rfp_analyzer.process_rfp(content)
-
-# ---------------- ONEDRIVE MODE ----------------
-if mode == "OneDrive":
-    if not CLIENT_ID or not CLIENT_SECRET or not TENANT_ID:
-        st.error("Azure credentials not configured. Please set environment variables.")
-    else:
-        try:
-            token = get_token()
-            files = get_rfp_files(token)
-
-            if not files:
-                st.warning("No files found in OneDrive path")
-            else:
-                names = [f["name"] for f in files]
-                selected = st.selectbox("Select RFP from OneDrive", names)
-
-                if selected:
-                    obj = next(f for f in files if f["name"] == selected)
-                    content = download_file(token, obj["id"]).decode("utf-8", errors="ignore")
-
-                    result = rfp_analyzer.process_rfp(content)
-
-        except Exception as e:
-            st.error(f"OneDrive error: {e}")
-
-# ---------------- DISPLAY ----------------
-if result:
-
-    col1, col2, col3 = st.columns(3)
-
-    with col1:
-        st.subheader("Score")
-        st.write(result["scores"]["total"])
-
-    with col2:
-        st.subheader("Win Probability")
-        st.write(result["win_probability"])
-
-    with col3:
-        st.subheader("Decision")
-
-        if result["recommendation"] == "BID":
-            st.success("BID")
-        elif result["recommendation"] == "REVIEW":
-            st.warning("REVIEW")
         else:
-            st.error("NO BID")
+            return file_bytes.decode("utf-8", errors="ignore")
 
-    st.markdown("---")
+    except Exception as e:
+        return f"Error reading file: {str(e)}"
 
-    st.subheader("Executive Summary")
-    st.write(result["explanation"])
+# ================= EXTRACTION =================
+def extract_contract_info(text):
+    data = {
+        "Contract Date": "Not Found",
+        "Contract Officer": "Not Found",
+        "Contract Value": "Not Found"
+    }
 
-    st.subheader("Capability Match")
-    for c in result["capability_match"]:
-        st.write("✔️", c)
+    # Date
+    date = re.search(r"\b(\d{1,2}[-/ ]\d{1,2}[-/ ]\d{2,4})\b", text)
+    if date:
+        data["Contract Date"] = date.group()
 
-    st.subheader("Past Performance")
-    for p in result["past_performance"]:
-        st.write("🏆", p)
+    # Value
+    value = re.search(r"(\$|₹)\s?[\d,]+", text)
+    if value:
+        data["Contract Value"] = value.group()
 
-    st.subheader("Risks")
-    for r in result["risks"]:
-        st.write("⚠️", r)
+    # Officer
+    officer = re.search(r"(Contract Officer|Officer)[:\- ]+(.*)", text, re.IGNORECASE)
+    if officer:
+        data["Contract Officer"] = officer.group(2)
+
+    return data
+
+# ================= UI =================
+st.set_page_config(page_title="RFP Intelligence Platform", layout="wide")
+
+st.title("📊 RFP Intelligence Platform")
+st.caption("SharePoint Integrated Document Intelligence")
+
+# ================= MAIN =================
+token = get_token()
+
+if not token:
+    st.error("❌ Authentication failed")
+    st.stop()
+
+with st.spinner("Fetching SharePoint files..."):
+    files = get_all_files_recursive(token)
+
+if not files:
+    st.warning("⚠ No files found in SharePoint")
+    st.stop()
+
+# Select file
+options = [f["path"] for f in files]
+selected = st.selectbox("📂 Select Document", options)
+
+selected_file = next(f for f in files if f["path"] == selected)
+
+# Download file
+file_bytes = download_file(token, selected_file["id"])
+
+# Extract text
+text = extract_text(file_bytes, selected_file["name"])
+
+# Extract contract data
+data = extract_contract_info(text)
+
+# ================= DISPLAY =================
+st.subheader("📄 Extracted Contract Details")
+
+col1, col2, col3 = st.columns(3)
+
+col1.metric("Contract Date", data["Contract Date"])
+col2.metric("Contract Officer", data["Contract Officer"])
+col3.metric("Contract Value", data["Contract Value"])
+
+st.divider()
+
+with st.expander("📜 Full Extracted Text"):
+    st.text(text[:5000])

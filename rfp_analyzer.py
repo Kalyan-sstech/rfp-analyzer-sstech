@@ -36,7 +36,7 @@ def calculate_score(content):
 # =========================
 def generate_ai_summary(content, score, win_probability):
     try:
-        model = genai.GenerativeModel("gemini-1.5-flash")
+        model = genai.GenerativeModel("gemini-1.5-pro")
 
         prompt = f"""
         Analyze this RFP and provide:

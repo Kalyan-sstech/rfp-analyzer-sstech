@@ -1,0 +1,28 @@
+**RFP Title:** IT Operations Support and Helpdesk Services
+**Agency:** State Health Department
+
+## Overview
+
+The department requires IT support services for ongoing system operations.
+
+## Scope
+
+* Helpdesk support (24/7)
+* System monitoring
+* Incident management
+* Basic cloud support
+
+## Requirements
+
+* Experience in IT support
+* Ability to manage service tickets
+* Knowledge of enterprise systems
+
+## NAICS
+
+541513
+
+## Outcome
+
+* Stable IT operations
+* Improved response time

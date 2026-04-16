@@ -1,0 +1,30 @@
+**RFP Title:** Enterprise Cloud Transformation with AI Analytics
+**Agency:** Department of Digital Innovation
+
+## Overview
+
+The agency is seeking a vendor to modernize legacy systems and implement AI-driven analytics in a secure cloud environment.
+
+## Scope
+
+* Cloud migration (AWS/Azure)
+* AI/ML model development
+* Enterprise application modernization
+* DevSecOps pipeline implementation
+* Cybersecurity compliance (NIST, FedRAMP)
+
+## Requirements
+
+* Experience in cloud architecture and system integration
+* Strong AI/ML capabilities
+* Proven federal project experience
+* Ability to deliver scalable enterprise solutions
+
+## NAICS
+
+541511, 541512, 541519
+
+## Outcome
+
+* Full digital transformation
+* Improved analytics and automation

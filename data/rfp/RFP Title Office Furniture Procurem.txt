@@ -1,0 +1,24 @@
+**RFP Title:** Office Furniture Procurement
+**Agency:** City Administration
+
+## Overview
+
+The city is looking to procure office furniture for new facilities.
+
+## Scope
+
+* Supply desks, chairs, and cabinets
+* Installation and delivery
+
+## Requirements
+
+* Experience in furniture supply
+* Logistics capability
+
+## NAICS
+
+337214
+
+## Outcome
+
+* Office setup completion

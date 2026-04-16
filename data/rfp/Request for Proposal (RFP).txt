@@ -1,0 +1,91 @@
+**Request for Proposal (RFP)**
+**Project Title:** AI-Enabled Cloud Modernization and Cybersecurity Enhancement
+**Agency:** Federal Civilian Agency (FCA)
+**Release Date:** June 2026
+
+---
+
+## 1. Overview
+
+The Federal Civilian Agency (FCA) is seeking qualified vendors to provide services for cloud modernization, AI-driven analytics, and cybersecurity enhancement. The goal is to improve operational efficiency, security posture, and digital transformation capabilities.
+
+---
+
+## 2. Scope of Work
+
+The selected contractor will be responsible for:
+
+* Migrating legacy applications to a secure cloud environment (AWS/Azure)
+* Designing scalable system architecture for enterprise applications
+* Implementing AI/ML models for data analytics and automation
+* Providing cybersecurity services aligned with NIST and FedRAMP standards
+* Supporting ongoing IT operations, helpdesk, and system monitoring
+* Delivering DevSecOps pipelines and CI/CD automation
+
+---
+
+## 3. Technical Requirements
+
+Vendors must demonstrate:
+
+* Experience in **cloud architecture and system integration**
+* Expertise in **AI/ML, automation, and application development**
+* Knowledge of **cybersecurity frameworks (NIST, Zero Trust, FedRAMP)**
+* Capability to provide **24/7 IT support services**
+* Strong experience in **federal government projects**
+
+---
+
+## 4. Business Requirements
+
+* Must be eligible for **Small Business / 8(a) partnership**
+* Proven experience in federal contracting
+* Ability to collaborate with subcontractors
+
+---
+
+## 5. NAICS Codes
+
+Relevant NAICS codes include:
+
+* 541511 – Custom Computer Programming Services
+* 541512 – Computer Systems Design Services
+* 541519 – Other Computer Related Services
+* 541513 – Computer Facilities Management Services
+
+---
+
+## 6. Evaluation Criteria
+
+Proposals will be evaluated based on:
+
+* Technical capability (40%)
+* Past performance (25%)
+* Price (20%)
+* Innovation and AI capability (15%)
+
+---
+
+## 7. Expected Outcome
+
+The agency expects:
+
+* Improved system performance and scalability
+* Enhanced cybersecurity posture
+* AI-driven decision-making capabilities
+* Efficient IT operations
+
+---
+
+## 8. Submission Deadline
+
+All proposals must be submitted by **July 15, 2026**
+
+---
+
+## 9. Contact Information
+
+Point of Contact: Procurement Officer
+Email: [procurement@fca.gov](mailto:procurement@fca.gov)
+
+---

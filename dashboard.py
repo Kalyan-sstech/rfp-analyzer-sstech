@@ -18,6 +18,11 @@ DRIVE_ID = "b!ORTaGLwN-02_GrAVrK79m9MsvOiftmRArp9gOMPHOxcdYXfXWEvoTrGLSi4bzM20"
 AUTHORITY = f"https://login.microsoftonline.com/{TENANT_ID}"
 SCOPE = ["https://graph.microsoft.com/.default"]
 
+# ================= VALIDATION =================
+if not CLIENT_ID or not CLIENT_SECRET or not TENANT_ID:
+    st.error("❌ Missing Azure credentials")
+    st.stop()
+
 # ================= AUTH =================
 def get_token():
     app = msal.ConfidentialClientApplication(
@@ -25,8 +30,31 @@ def get_token():
         authority=AUTHORITY,
         client_credential=CLIENT_SECRET
     )
+
     result = app.acquire_token_for_client(scopes=SCOPE)
-    return result.get("access_token")
+
+    if "access_token" in result:
+        return result["access_token"]
+    else:
+        st.error("❌ Authentication failed")
+        st.json(result)
+        return None
+
+# ================= CLEAN TEXT =================
+def clean_text(text):
+    return re.sub(r"\s+", " ", text).strip()
+
+# ================= CLIENT NAME (FIXED) =================
+def extract_client_name(path):
+    parts = path.split("/")
+
+    if "Client" in parts:
+        idx = parts.index("Client")
+
+        if idx + 1 < len(parts):
+            return clean_text(parts[idx + 1])
+
+    return "Unknown"
 
 # ================= SHAREPOINT =================
 def get_all_files_recursive(token):
@@ -56,18 +84,19 @@ def get_all_files_recursive(token):
     return all_files
 
 # ================= DOWNLOAD =================
-@st.cache_data
+@st.cache_data(show_spinner=False)
 def download_file(token, file_id):
     url = f"https://graph.microsoft.com/v1.0/drives/{DRIVE_ID}/items/{file_id}/content"
     headers = {"Authorization": f"Bearer {token}"}
     return requests.get(url, headers=headers).content
 
-# ================= TEXT =================
+# ================= TEXT EXTRACTION =================
 def extract_text(file_bytes, file_name):
     try:
         if file_name.lower().endswith(".pdf"):
             with pdfplumber.open(io.BytesIO(file_bytes)) as pdf:
-                return "\n".join([p.extract_text() or "" for p in pdf.pages[:5]])
+                pages = pdf.pages[:5]  # speed optimization
+                return "\n".join([p.extract_text() or "" for p in pages])
 
         elif file_name.lower().endswith(".docx"):
             doc = Document(io.BytesIO(file_bytes))
@@ -75,10 +104,11 @@ def extract_text(file_bytes, file_name):
 
         else:
             return file_bytes.decode("utf-8", errors="ignore")
+
     except:
         return ""
 
-# ================= EXTRACTION =================
+# ================= CONTRACT EXTRACTION =================
 def extract_contract_info(text):
     data = {
         "Contract Date": "Not Found",
@@ -86,10 +116,16 @@ def extract_contract_info(text):
         "Contract Value": "Not Found"
     }
 
-    # Date
-    date = re.search(r"\b\d{1,2}/\d{1,2}/\d{4}\b", text)
-    if date:
-        data["Contract Date"] = date.group()
+    # Date patterns
+    date_patterns = [
+        r"\b\d{1,2}/\d{1,2}/\d{4}\b",
+        r"\b\d{1,2}-\d{1,2}-\d{4}\b"
+    ]
+    for pattern in date_patterns:
+        match = re.search(pattern, text)
+        if match:
+            data["Contract Date"] = match.group()
+            break
 
     # Value
     value = re.search(r"(\$|₹)\s?[\d,]+", text)
@@ -97,34 +133,46 @@ def extract_contract_info(text):
         data["Contract Value"] = value.group()
 
     # Officer
-    officer = re.search(r"(Authorized by|Authored by|Prepared by)[:\- ]+(.*)", text, re.IGNORECASE)
-    if officer:
-        data["Contract Officer"] = officer.group(2).strip()
+    officer_patterns = [
+        r"Authorized by[:\- ]+(.*)",
+        r"Authored by[:\- ]+(.*)",
+        r"Prepared by[:\- ]+(.*)",
+        r"Contract Officer[:\- ]+(.*)"
+    ]
+
+    for pattern in officer_patterns:
+        match = re.search(pattern, text, re.IGNORECASE)
+        if match:
+            data["Contract Officer"] = clean_text(match.group(1))
+            break
 
     return data
 
-# ================= CLIENT NAME =================
-def extract_client_name(path):
-    parts = path.split("/")
-    try:
-        return parts[2]  # SST Inc / Client / CLIENT NAME
-    except:
-        return "Unknown"
-
 # ================= UI =================
-st.title("📊 RFP Intelligence Platform")
+st.set_page_config(page_title="RFP Intelligence Platform", layout="wide")
 
+st.title("📊 RFP Intelligence Platform")
+st.caption("SharePoint Integrated Document Intelligence")
+
+# ================= MAIN =================
 token = get_token()
 
 if not token:
-    st.error("Authentication failed")
     st.stop()
 
-files = get_all_files_recursive(token)
+with st.spinner("📂 Fetching SharePoint files..."):
+    files = get_all_files_recursive(token)
 
+if not files:
+    st.warning("No files found")
+    st.stop()
+
+st.info(f"Total Files Found: {len(files)}")
+
+# ================= PROCESS BUTTON =================
 if st.button("🚀 Process All Documents"):
-    results = []
 
+    results = []
     progress = st.progress(0)
 
     for i, file in enumerate(files):
@@ -135,7 +183,9 @@ if st.button("🚀 Process All Documents"):
         results.append({
             "Client Name": extract_client_name(file["path"]),
             "File Name": file["name"],
-            **extracted
+            "Contract Date": extracted["Contract Date"],
+            "Contract Officer": extracted["Contract Officer"],
+            "Contract Value": extracted["Contract Value"]
         })
 
         progress.progress((i + 1) / len(files))
@@ -144,9 +194,10 @@ if st.button("🚀 Process All Documents"):
 
     st.success("✅ Processing Completed")
 
+    # ================= DISPLAY =================
     st.dataframe(df)
 
-    # CSV DOWNLOAD
+    # ================= CSV =================
     csv = df.to_csv(index=False).encode("utf-8")
 
     st.download_button(

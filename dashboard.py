@@ -58,13 +58,72 @@ def extract_path_from_url(url):
 def clean_text(text):
     return re.sub(r"\s+", " ", text).strip()
 
-def extract_client_name(path):
+# ================= ADVANCED CLIENT EXTRACTION =================
+def extract_client_name_advanced(text, path):
+
+    candidates = []
+    scores = []
+
+    header_text = text[:1500]
+
+    # ===== Company Patterns =====
+    company_patterns = [
+        r"([A-Z][A-Za-z&,\.\s]{3,} (Inc|LLC|Ltd|Corporation|Corp|Technologies|Solutions|Services|Systems))"
+    ]
+
+    for pattern in company_patterns:
+        matches = re.findall(pattern, header_text)
+        for match in matches:
+            candidates.append(clean_text(match[0]))
+            scores.append(0.9)
+
+    # ===== Keyword Patterns =====
+    keyword_patterns = [
+        r"Client[:\- ]+(.*)",
+        r"Customer[:\- ]+(.*)",
+        r"Company[:\- ]+(.*)",
+        r"Agreement between (.*) and"
+    ]
+
+    for pattern in keyword_patterns:
+        match = re.search(pattern, header_text, re.IGNORECASE)
+        if match:
+            candidates.append(clean_text(match.group(1)))
+            scores.append(0.8)
+
+    # ===== Signature Section =====
+    signature_patterns = [
+        r"For[:\- ]+(.*)",
+        r"By[:\- ]+(.*)"
+    ]
+
+    for pattern in signature_patterns:
+        match = re.search(pattern, text[-1000:], re.IGNORECASE)
+        if match:
+            candidates.append(clean_text(match.group(1)))
+            scores.append(0.6)
+
+    # ===== FILTER =====
+    final_candidates = []
+
+    for c, s in zip(candidates, scores):
+        if len(c) > 5 and len(c) < 80:
+            if not any(x in c.lower() for x in ["agreement", "page", "table", "date"]):
+                final_candidates.append((c, s))
+
+    # ===== PICK BEST =====
+    if final_candidates:
+        best = sorted(final_candidates, key=lambda x: x[1], reverse=True)[0]
+        return best[0], round(best[1] * 100, 2)
+
+    # ===== FALLBACK =====
     parts = path.split("/")
     if "Client" in parts:
         idx = parts.index("Client")
         if idx + 1 < len(parts):
-            return clean_text(parts[idx + 1])
-    return "Unknown"
+            return clean_text(parts[idx + 1]), 40.0
+
+    return "Unknown", 0.0
 
 # ================= SHAREPOINT =================
 def get_files(token, base_path):
@@ -129,7 +188,7 @@ def extract_text(file_bytes, file_name):
     except:
         return ""
 
-# ================= EXTRACTION =================
+# ================= CONTRACT EXTRACTION =================
 def extract_contract_info(text):
     data = {
         "Contract Date": "Not Found",
@@ -162,11 +221,11 @@ def extract_contract_info(text):
 # ================= UI =================
 st.set_page_config(page_title="RFP Intelligence Platform", layout="wide")
 
-# ===== HEADER WITH LOGO =====
 col1, col2 = st.columns([1, 6])
 
 with col1:
-    st.image("logo.png", width=80)
+    if os.path.exists("logo.png"):
+        st.image("logo.png", width=80)
 
 with col2:
     st.markdown("## RFP Intelligence Platform")
@@ -206,14 +265,18 @@ if st.button("🚀 Process Documents"):
             try:
                 file_bytes = download_file(token, file["id"])
                 text = extract_text(file_bytes, file["name"])
+
+                client, confidence = extract_client_name_advanced(text, file["path"])
                 extracted = extract_contract_info(text)
 
                 results.append({
                     "Source Path": base_path,
-                    "Client Name": extract_client_name(file["path"]),
+                    "Client Name": client,
+                    "Confidence (%)": confidence,
                     "File Name": file["name"],
                     **extracted
                 })
+
             except:
                 errors += 1
 
@@ -226,7 +289,7 @@ if st.button("🚀 Process Documents"):
 
     col1.metric("📄 Total Files", len(df))
     col2.metric("⚠ Errors", errors)
-    col3.metric("✅ Success Rate", f"{round((len(df)/(len(df)+errors+1))*100,2)}%")
+    col3.metric("📊 Avg Confidence", f"{round(df['Confidence (%)'].mean(),2) if not df.empty else 0}%")
 
     st.divider()
 
